@@ -26,7 +26,10 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 # ==================== تنظیمات ====================
 # اول از environment variable میخونه (برای سرور)، اگه نبود از مقدار پیش‌فرض (برای اجرای محلی/Pydroid)
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "PUT_YOUR_BOT_TOKEN_HERE")
-DB_PATH = "war_bot.db"
+# روی Railway حتماً یه Volume بساز (مثلاً با Mount Path = /data) و متغیر محیطی DB_PATH رو
+# روی مسیر داخل همون Volume بذار (مثلاً /data/war_bot.db). وگرنه هر ری‌دیپلوی/ری‌استارت
+# دیتابیس از صفر میشه چون فایل‌سیستم کانتینر پایدار نیست.
+DB_PATH = os.environ.get("DB_PATH", "war_bot.db")
 
 START_GOLD = 100
 START_COINS = 500
@@ -39,11 +42,36 @@ MAX_HP = 100
 XP_BASE_PER_LEVEL = 100
 
 COUNTRIES = {
-    "iran":    {"name": "🇮🇷 ایران",   "bonus": "🛢 تولید نفت +۱۰٪"},
-    "usa":     {"name": "🇺🇸 آمریکا",  "bonus": "⚔️ قدرت نظامی +۱۰٪"},
-    "russia":  {"name": "🇷🇺 روسیه",   "bonus": "⛏ تولید آهن +۱۰٪"},
-    "china":   {"name": "🇨🇳 چین",     "bonus": "👥 جمعیت +۱۰٪"},
-    "germany": {"name": "🇩🇪 آلمان",   "bonus": "🔬 سرعت تحقیقات +۱۰٪"},
+    "iran":         {"name": "🇮🇷 ایران",        "bonus": "🪙 تولید طلا +۱۲٪",      "bonus_type": "gold_pct",     "bonus_value": 0.12},
+    "usa":          {"name": "🇺🇸 آمریکا",       "bonus": "⚔️ قدرت نظامی +۱۲٪",     "bonus_type": "military_pct", "bonus_value": 0.12},
+    "russia":       {"name": "🇷🇺 روسیه",        "bonus": "💰 تولید سکه +۱۲٪",      "bonus_type": "coins_pct",    "bonus_value": 0.12},
+    "china":        {"name": "🇨🇳 چین",          "bonus": "💰 تولید سکه +۱۳٪",      "bonus_type": "coins_pct",    "bonus_value": 0.13},
+    "germany":      {"name": "🇩🇪 آلمان",        "bonus": "✨ کسب XP +۱۲٪",         "bonus_type": "xp_pct",       "bonus_value": 0.12},
+    "france":       {"name": "🇫🇷 فرانسه",       "bonus": "⚔️ قدرت نظامی +۱۰٪",     "bonus_type": "military_pct", "bonus_value": 0.10},
+    "uk":           {"name": "🇬🇧 بریتانیا",     "bonus": "🪙 تولید طلا +۱۰٪",      "bonus_type": "gold_pct",     "bonus_value": 0.10},
+    "japan":        {"name": "🇯🇵 ژاپن",         "bonus": "✨ کسب XP +۱۳٪",         "bonus_type": "xp_pct",       "bonus_value": 0.13},
+    "south_korea":  {"name": "🇰🇷 کره‌جنوبی",     "bonus": "✨ کسب XP +۱۰٪",         "bonus_type": "xp_pct",       "bonus_value": 0.10},
+    "north_korea":  {"name": "🇰🇵 کره‌شمالی",     "bonus": "⚔️ قدرت نظامی +۱۵٪",     "bonus_type": "military_pct", "bonus_value": 0.15},
+    "india":        {"name": "🇮🇳 هند",          "bonus": "💰 تولید سکه +۱۲٪",      "bonus_type": "coins_pct",    "bonus_value": 0.12},
+    "pakistan":     {"name": "🇵🇰 پاکستان",      "bonus": "⚔️ قدرت نظامی +۱۰٪",     "bonus_type": "military_pct", "bonus_value": 0.10},
+    "israel":       {"name": "🇮🇱 اسرائیل",      "bonus": "⚔️ قدرت نظامی +۱۴٪",     "bonus_type": "military_pct", "bonus_value": 0.14},
+    "saudi_arabia": {"name": "🇸🇦 عربستان",      "bonus": "🪙 تولید طلا +۱۵٪",      "bonus_type": "gold_pct",     "bonus_value": 0.15},
+    "turkey":       {"name": "🇹🇷 ترکیه",        "bonus": "⚔️ قدرت نظامی +۱۰٪",     "bonus_type": "military_pct", "bonus_value": 0.10},
+    "egypt":        {"name": "🇪🇬 مصر",          "bonus": "💰 تولید سکه +۱۰٪",      "bonus_type": "coins_pct",    "bonus_value": 0.10},
+    "uae":          {"name": "🇦🇪 امارات",       "bonus": "🪙 تولید طلا +۱۳٪",      "bonus_type": "gold_pct",     "bonus_value": 0.13},
+    "brazil":       {"name": "🇧🇷 برزیل",        "bonus": "💰 تولید سکه +۱۱٪",      "bonus_type": "coins_pct",    "bonus_value": 0.11},
+    "canada":       {"name": "🇨🇦 کانادا",       "bonus": "🪙 تولید طلا +۱۰٪",      "bonus_type": "gold_pct",     "bonus_value": 0.10},
+    "australia":    {"name": "🇦🇺 استرالیا",     "bonus": "🪙 تولید طلا +۱۱٪",      "bonus_type": "gold_pct",     "bonus_value": 0.11},
+    "italy":        {"name": "🇮🇹 ایتالیا",      "bonus": "✨ کسب XP +۹٪",          "bonus_type": "xp_pct",       "bonus_value": 0.09},
+    "spain":        {"name": "🇪🇸 اسپانیا",      "bonus": "💰 تولید سکه +۹٪",       "bonus_type": "coins_pct",    "bonus_value": 0.09},
+    "poland":       {"name": "🇵🇱 لهستان",       "bonus": "⚔️ قدرت نظامی +۹٪",      "bonus_type": "military_pct", "bonus_value": 0.09},
+    "ukraine":      {"name": "🇺🇦 اوکراین",      "bonus": "⚔️ قدرت نظامی +۱۱٪",     "bonus_type": "military_pct", "bonus_value": 0.11},
+    "sweden":       {"name": "🇸🇪 سوئد",         "bonus": "✨ کسب XP +۱۰٪",         "bonus_type": "xp_pct",       "bonus_value": 0.10},
+    "switzerland":  {"name": "🇨🇭 سوئیس",        "bonus": "🪙 تولید طلا +۱۲٪",      "bonus_type": "gold_pct",     "bonus_value": 0.12},
+    "indonesia":    {"name": "🇮🇩 اندونزی",      "bonus": "💰 تولید سکه +۱۰٪",      "bonus_type": "coins_pct",    "bonus_value": 0.10},
+    "mexico":       {"name": "🇲🇽 مکزیک",        "bonus": "💰 تولید سکه +۹٪",       "bonus_type": "coins_pct",    "bonus_value": 0.09},
+    "south_africa": {"name": "🇿🇦 آفریقای‌جنوبی", "bonus": "🪙 تولید طلا +۱۲٪",      "bonus_type": "gold_pct",     "bonus_value": 0.12},
+    "vietnam":      {"name": "🇻🇳 ویتنام",       "bonus": "💰 تولید سکه +۹٪",       "bonus_type": "coins_pct",    "bonus_value": 0.09},
 }
 
 DAILY_MISSIONS = [
@@ -84,11 +112,41 @@ BUILDINGS = {
         "cost_growth": 1.5,
         "max_level": 15,
     },
+    "barracks": {
+        "name": "🎖 پادگان",
+        "currency": None,          # تولیدکننده نیست، سطحش سقف نیروی نظامی و رده‌های واحد رو باز می‌کنه
+        "resource": "coins",
+        "base_cost": 300,
+        "cost_growth": 1.65,
+        "max_level": 10,
+    },
 }
-BUILDING_ORDER = ["farm", "mine", "warehouse"]
+BUILDING_ORDER = ["farm", "mine", "warehouse", "barracks"]
 
 WAREHOUSE_BASE_HOURS = 12       # ظرفیت انباشت تولید بدون هیچ انبار (سطح ۰)
 WAREHOUSE_HOURS_PER_LEVEL = 2   # هر سطح انبار چقدر به ظرفیت اضافه میکنه
+
+ARMY_BASE_CAPACITY = 20         # سقف تعداد کل نیروی نظامی بدون پادگان
+ARMY_CAPACITY_PER_BARRACKS_LEVEL = 15  # هر سطح پادگان چقدر به سقف نیرو اضافه میکنه
+
+# ---- واحدهای نظامی ----
+# unlock_level: حداقل سطح پادگان لازم برای دسترسی به این واحد
+UNITS = {
+    "infantry":         {"name": "🪖 پیاده‌نظام",        "unlock_level": 0,  "cost_coins": 50,    "cost_gold": 0,    "power": 5,    "upkeep": 1},
+    "sniper":           {"name": "🎯 تک‌تیرانداز",       "unlock_level": 1,  "cost_coins": 150,   "cost_gold": 0,    "power": 12,   "upkeep": 2},
+    "apc":              {"name": "🚙 نفربر زرهی",        "unlock_level": 2,  "cost_coins": 400,   "cost_gold": 5,    "power": 30,   "upkeep": 4},
+    "tank":             {"name": "🛡 تانک",              "unlock_level": 3,  "cost_coins": 900,   "cost_gold": 15,   "power": 70,   "upkeep": 8},
+    "artillery":        {"name": "💥 توپخانه",           "unlock_level": 4,  "cost_coins": 1500,  "cost_gold": 30,   "power": 120,  "upkeep": 12},
+    "helicopter":       {"name": "🚁 بالگرد جنگی",       "unlock_level": 5,  "cost_coins": 2500,  "cost_gold": 60,   "power": 200,  "upkeep": 20},
+    "fighter_jet":      {"name": "🛩 جنگنده",            "unlock_level": 6,  "cost_coins": 5000,  "cost_gold": 150,  "power": 400,  "upkeep": 40},
+    "warship":          {"name": "🚢 ناوشکن",            "unlock_level": 7,  "cost_coins": 9000,  "cost_gold": 300,  "power": 700,  "upkeep": 70},
+    "submarine":        {"name": "🛥 زیردریایی",         "unlock_level": 8,  "cost_coins": 15000, "cost_gold": 500,  "power": 1200, "upkeep": 120},
+    "missile_launcher": {"name": "🚀 سامانه موشکی",      "unlock_level": 10, "cost_coins": 30000, "cost_gold": 1000, "power": 2500, "upkeep": 250},
+}
+UNIT_ORDER = [
+    "infantry", "sniper", "apc", "tank", "artillery",
+    "helicopter", "fighter_jet", "warship", "submarine", "missile_launcher",
+]
 
 
 def building_upgrade_cost(building_id: str, current_level: int):
@@ -108,6 +166,18 @@ def building_production_per_hour(building_id: str, level: int) -> int:
 
 def building_storage_cap_hours(warehouse_level: int) -> int:
     return WAREHOUSE_BASE_HOURS + warehouse_level * WAREHOUSE_HOURS_PER_LEVEL
+
+
+def army_capacity(barracks_level: int) -> int:
+    return ARMY_BASE_CAPACITY + barracks_level * ARMY_CAPACITY_PER_BARRACKS_LEVEL
+
+
+def country_bonus(country_code: str, bonus_type: str) -> float:
+    """درصد بونوس یک کشور برای یک نوع مشخص (military_pct/coins_pct/gold_pct/xp_pct). صفر یعنی بونوسی نداره."""
+    country = COUNTRIES.get(country_code)
+    if not country or country.get("bonus_type") != bonus_type:
+        return 0.0
+    return country.get("bonus_value", 0.0)
 
 
 # ==================== دیتابیس ====================
@@ -153,6 +223,23 @@ async def init_db():
                 PRIMARY KEY (user_id, building_id)
             )
         """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS user_army (
+                user_id INTEGER,
+                unit_id TEXT,
+                count INTEGER DEFAULT 0,
+                PRIMARY KEY (user_id, unit_id)
+            )
+        """)
+        try:
+            await db.execute("ALTER TABLE users ADD COLUMN military_power INTEGER DEFAULT 0")
+        except Exception:
+            pass  # ستون از قبل وجود داره (روی دیتابیس‌های قدیمی‌تر)
+        try:
+            await db.execute("ALTER TABLE users ADD COLUMN last_upkeep_update TEXT")
+        except Exception:
+            pass
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_users_power ON users(military_power DESC)")
         await db.commit()
 
 
@@ -237,6 +324,9 @@ async def add_xp(user_id: int, amount: int):
     if not user:
         return []
 
+    bonus = country_bonus(user.get("country"), "xp_pct")
+    amount = int(amount * (1 + bonus))
+
     xp = user["xp"] + amount
     level = user["level"]
     xp_needed = user["xp_needed"]
@@ -291,6 +381,71 @@ async def update_mission_progress(user_id: int, mission_id: str, amount: int = 1
         db.row_factory = aiosqlite.Row
         cur = await db.execute(
             "SELECT * FROM daily_missions WHERE user_id = ? AND mission_id = ? AND mission_date = ?",
+            (user_id, mission_id, today),
+        )
+        row = await cur.fetchone()
+        if not row or row["completed"]:
+            return
+
+        new_progress = min(mission_def["goal"], row["progress"] + amount)
+        completed = 1 if new_progress >= mission_def["goal"] else 0
+        await db.execute("""
+            UPDATE daily_missions SET progress = ?, completed = ?
+            WHERE user_id = ? AND mission_id = ? AND mission_date = ?
+        """, (new_progress, completed, user_id, mission_id, today))
+        await db.commit()
+
+
+async def claim_mission_reward(user_id: int, mission_id: str):
+    today = _today()
+    mission_def = next((m for m in DAILY_MISSIONS if m["id"] == mission_id), None)
+    if not mission_def:
+        return False, None
+
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cur = await db.execute(
+            "SELECT * FROM daily_missions WHERE user_id = ? AND mission_id = ? AND mission_date = ?",
+            (user_id, mission_id, today),
+        )
+        row = await cur.fetchone()
+        if not row or not row["completed"] or row["claimed"]:
+            return False, mission_def
+
+        await db.execute("""
+            UPDATE daily_missions SET claimed = 1
+            WHERE user_id = ? AND mission_id = ? AND mission_date = ?
+        """, (user_id, mission_id, today))
+        await db.commit()
+
+    await add_coins(user_id, mission_def["reward_coins"])
+    await add_xp(user_id, mission_def["reward_xp"])
+    return True, mission_def
+
+
+# ==================== ساختمان‌ها و اقتصاد ====================
+async def ensure_buildings(user_id: int):
+    now = datetime.utcnow().isoformat()
+    async with aiosqlite.connect(DB_PATH) as db:
+        for b_id in BUILDING_ORDER:
+            await db.execute("""
+                INSERT OR IGNORE INTO user_buildings (user_id, building_id, level, last_collect)
+                VALUES (?, ?, 0, ?)
+            """, (user_id, b_id, now))
+        await db.commit()
+
+
+async def get_user_buildings(user_id: int) -> dict:
+    await ensure_buildings(user_id)
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cur = await db.execute("SELECT * FROM user_buildings WHERE user_id = ?", (user_id,))
+        rows = await cur.fetchall()
+        return {r["building_id"]: dict(r) for r in rows}
+
+
+async def upgrade_building(user_id: int, building_id: str):
+    """تلاش برای ارتقای یک ساختمان. خروجی: (suc * FROM daily_missions WHERE user_id = ? AND mission_id = ? AND mission_date = ?",
             (user_id, mission_id, today),
         )
         row = await cur.fetchone()

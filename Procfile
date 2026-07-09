@@ -1,1 +1,1 @@
-worker: python war_bot_single.py
+worker: python war_bot.py

@@ -1,2 +1,2 @@
 [deploy]
-startCommand = "python war_bot_single.py"
+startCommand = "python war_bot.py"
